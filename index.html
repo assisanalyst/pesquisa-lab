@@ -116,6 +116,29 @@
       color: #b91c1c;
     }
 
+    .btn-skip {
+      margin-top: 25px;
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    }
+
+    .btn-skip:hover {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .btn-skip:active {
+      transform: scale(0.98);
+    }
+
     .hidden {
       display: none !important;
     }
@@ -271,6 +294,13 @@
         </button>
 
       </div>
+
+      <button
+        class="btn-skip"
+        onclick="rate('Não Avaliado')">
+        ⏭️ Prefiro não avaliar
+      </button>
+
     </div>
 
     <!-- TELA 3: AGRADECIMENTO -->
