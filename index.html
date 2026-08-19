@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pesquisa de Satisfação - Laboratório</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      background: #eef2f6;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #1e293b;
+    }
+
+    .card {
+      background: white;
+      padding: 40px 30px;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      max-width: 650px;
+      width: 100%;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: #0f172a;
+    }
+
+    p {
+      font-size: 18px;
+      color: #64748b;
+      margin-bottom: 25px;
+      line-height: 1.4;
+    }
+
+    #osInput {
+      opacity: 0;
+      position: absolute;
+      top: -100px;
+      left: -100px;
+    }
+
+    .scan-status {
+      background: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      padding: 25px;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #334155;
+      margin: 20px 0;
+    }
+
+    .scan-icon {
+      font-size: 40px;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .emoji-container {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 25px;
+    }
+
+    .emoji-btn {
+      font-size: 55px;
+      padding: 20px 10px;
+      border: 3px solid transparent;
+      border-radius: 20px;
+      cursor: pointer;
+      background: #f8fafc;
+      flex: 1;
+      transition: transform 0.1s, border-color 0.2s, background-color 0.2s;
+      outline: none;
+    }
+
+    .emoji-btn:active {
+      transform: scale(0.93);
+    }
+
+    .btn-label {
+      font-size: 16px;
+      font-weight: 700;
+      display: block;
+      margin-top: 8px;
+    }
+
+    .btn-green {
+      border-color: #22c55e;
+      background: #f0fdf4;
+      color: #15803d;
+    }
+
+    .btn-yellow {
+      border-color: #eab308;
+      background: #fefce8;
+      color: #a16207;
+    }
+
+    .btn-red {
+      border-color: #ef4444;
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .footer {
+      margin-top: 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 15px;
+    }
+
+    .config-btn, .export-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+
+    .config-btn:hover, .export-btn:hover {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 90%;
+      text-align: left;
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .modal-content label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .modal-content input[type="text"],
+    .modal-content input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+
+    <!-- TELA 1: LEITURA DO CÓDIGO DE BARRAS -->
+    <div id="stepScan">
+      <h1>Pesquisa de Satisfação</h1>
+      <p>Aproxime o código de barras da sua ficha no leitor</p>
+
+      <div class="scan-status">
+        <span class="scan-icon">📑 🔍</span>
+        Aguardando bip da ficha...
+      </div>
+
+      <input
+        type="text"
+        id="osInput"
+        autofocus
+        autocomplete="off">
+    </div>
+
+    <!-- TELA 2: PESQUISA DE SATISFAÇÃO -->
+    <div id="stepRating" class="hidden">
+
+      <h1>Como foi seu atendimento hoje?</h1>
+
+      <p>
+        Toque na carinha que melhor representa sua opinião:
+      </p>
+
+      <div class="emoji-container">
+
+        <button
+          class="emoji-btn btn-green"
+          onclick="rate('Satisfeito')">
+          😊
+          <span class="btn-label">BOM</span>
+        </button>
+
+        <button
+          class="emoji-btn btn-yellow"
+          onclick="rate('Regular')">
+          😐
+          <span class="btn-label">REGULAR</span>
+        </button>
+
+        <button
+          class="emoji-btn btn-red"
+          onclick="rate('Ruim')">
+          🙁
+          <span class="btn-label">RUIM</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- TELA 3: AGRADECIMENTO -->
+    <div id="stepThanks" class="hidden">
+
+      <div style="font-size: 70px; margin-bottom: 10px;">
+        ✅
+      </div>
+
+      <h1 style="color: #22c55e; font-size: 32px;">
+        Muito Obrigado!
+      </h1>
+
+      <p>
+        Sua opinião nos ajuda a melhorar a qualidade da nossa assistência.
+      </p>
+
+    </div>
+
+    <!-- RODAPÉ -->
+    <div class="footer">
+
+      <button
+        class="export-btn"
+        onclick="abrirAdmin('backup')">
+        📥 Relatório Backup
+      </button>
+
+      <button
+        class="config-btn"
+        onclick="abrirAdmin('config')">
+        ⚙️ Admin
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL DE AUTENTICAÇÃO -->
+  <div id="authModal" class="modal hidden">
+
+    <div class="modal-content">
+
+      <h2>🔒 Acesso Restrito</h2>
+
+      <p style="font-size:14px; color:#64748b;">
+        Informe a credencial de acesso para continuar.
+      </p>
+
+      <label for="passInput">
+        Credencial:
+      </label>
+
+      <input
+        type="password"
+        id="passInput"
+        placeholder="Informe a credencial"
+        onkeypress="checarTeclaSenha(event)"
+        autocomplete="off">
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="fecharAdmin()">
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="confirmarRamal()">
+          Entrar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÃO -->
+  <div id="configModal" class="modal hidden">
+
+    <div class="modal-content">
+
+      <h2>⚙️ Configuração da Planilha</h2>
+
+      <p style="font-size:14px; color:#64748b;">
+        Cole abaixo o link do Google Apps Script para enviar os dados
+        direto para o Google Sheets em tempo real.
+      </p>
+
+      <label for="scriptUrlInput">
+        URL do App da Web (Google Script):
+      </label>
+
+      <input
+        type="text"
+        id="scriptUrlInput"
+        placeholder="https://script.google.com/macros/s/.../exec">
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="fecharConfig()">
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          class="btn-primary"
+          onclick="salvarConfig()">
+          Salvar Link
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+
+    const _credencialHash =
+      '41b5a1640c8751f9b4dbf472c60e054f248c971d8076c50c25ff99bebbc9c8cc';
+
+    let _tentativas = 0;
+    let _bloqueadoAte = 0;
+
+    let currentOS = '';
+    let scanTime = '';
+    let acaoPendente = '';
+
+    const osInput =
+      document.getElementById('osInput');
+
+    const stepScan =
+      document.getElementById('stepScan');
+
+    const stepRating =
+      document.getElementById('stepRating');
+
+    const stepThanks =
+      document.getElementById('stepThanks');
+
+    const authModal =
+      document.getElementById('authModal');
+
+    const configModal =
+      document.getElementById('configModal');
+
+    const passInput =
+      document.getElementById('passInput');
+
+    const scriptUrlInput =
+      document.getElementById('scriptUrlInput');
+
+
+    async function gerarHash(texto) {
+
+      const dados =
+        new TextEncoder().encode(texto);
+
+      const buffer =
+        await crypto.subtle.digest(
+          'SHA-256',
+          dados
+        );
+
+      return Array
+        .from(new Uint8Array(buffer))
+        .map(byte =>
+          byte.toString(16).padStart(2, '0')
+        )
+        .join('');
+    }
+
+
+    // ============================================================
+    // FOCO AUTOMÁTICO DO LEITOR
+    // ============================================================
+
+    document.addEventListener('click', function () {
+
+      const authAberto =
+        !authModal.classList.contains('hidden');
+
+      const configAberto =
+        !configModal.classList.contains('hidden');
+
+      if (!authAberto && !configAberto) {
+        osInput.focus();
+      }
+
+    });
+
+
+    // ============================================================
+    // LEITURA DO CÓDIGO DE BARRAS
+    // ============================================================
+
+    osInput.addEventListener(
+      'keypress',
+      function (e) {
+
+        if (e.key === 'Enter') {
+
+          currentOS =
+            osInput.value.trim();
+
+          if (currentOS !== '') {
+
+            scanTime =
+              new Date().toLocaleString('pt-BR');
+
+            osInput.value = '';
+
+            mostrarEtapa(stepRating);
+          }
+
+        }
+
+      }
+    );
+
+
+    // ============================================================
+    // VOTAÇÃO
+    // ============================================================
+
+    function rate(satisfacao) {
+
+      const registro = {
+
+        os: currentOS,
+
+        dataHoraColeta: scanTime,
+
+        satisfacao: satisfacao
+
+      };
+
+
+      let historico =
+        JSON.parse(
+          localStorage.getItem('lab_data') || '[]'
+        );
+
+
+      historico.push(registro);
+
+
+      localStorage.setItem(
+        'lab_data',
+        JSON.stringify(historico)
+      );
+
+
+      const scriptUrl =
+        localStorage.getItem('google_script_url');
+
+
+      if (scriptUrl) {
+
+        fetch(scriptUrl, {
+
+          method: 'POST',
+
+          mode: 'no-cors',
+
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify(registro)
+
+        }).catch(function (err) {
+
+          console.error(
+            'Erro ao enviar:',
+            err
+          );
+
+        });
+
+      }
+
+
+      mostrarEtapa(stepThanks);
+
+
+      setTimeout(function () {
+
+        mostrarEtapa(stepScan);
+
+        osInput.focus();
+
+      }, 1800);
+
+    }
+
+
+    // ============================================================
+    // TROCA DE TELAS
+    // ============================================================
+
+    function mostrarEtapa(etapa) {
+
+      stepScan.classList.add('hidden');
+
+      stepRating.classList.add('hidden');
+
+      stepThanks.classList.add('hidden');
+
+      etapa.classList.remove('hidden');
+
+    }
+
+
+    // ============================================================
+    // ABRIR ADMIN
+    // ============================================================
+
+    function abrirAdmin(acao) {
+
+      acaoPendente = acao;
+
+      passInput.value = '';
+
+      authModal.classList.remove('hidden');
+
+      setTimeout(function () {
+
+        passInput.focus();
+
+      }, 100);
+
+    }
+
+
+    // ============================================================
+    // FECHAR ADMIN
+    // ============================================================
+
+    function fecharAdmin() {
+
+      authModal.classList.add('hidden');
+
+      acaoPendente = '';
+
+      passInput.value = '';
+
+      osInput.focus();
+
+    }
+
+
+    // ============================================================
+    // ENTER NA CREDENCIAL
+    // ============================================================
+
+    function checarTeclaSenha(e) {
+
+      if (e.key === 'Enter') {
+
+        confirmarRamal();
+
+      }
+
+    }
+
+
+    // ============================================================
+    // AUTENTICAÇÃO
+    // ============================================================
+
+    async function confirmarRamal() {
+
+      const agora =
+        Date.now();
+
+
+      // Bloqueio temporário
+      if (agora < _bloqueadoAte) {
+
+        const segundos =
+          Math.ceil(
+            (_bloqueadoAte - agora) / 1000
+          );
+
+        alert(
+          'Acesso temporariamente bloqueado. ' +
+          'Tente novamente em ' +
+          segundos +
+          ' segundos.'
+        );
+
+        return;
+
+      }
+
+
+      const valorDigitado =
+        passInput.value;
+
+
+      const hashDigitado =
+        await gerarHash(valorDigitado);
+
+
+      // Comparação do HASH
+      if (hashDigitado === _credencialHash) {
+
+        _tentativas = 0;
+
+        authModal.classList.add('hidden');
+
+
+        // CONFIGURAÇÃO
+        if (acaoPendente === 'config') {
+
+          scriptUrlInput.value =
+            localStorage.getItem(
+              'google_script_url'
+            ) || '';
+
+          configModal.classList.remove('hidden');
+
+          setTimeout(function () {
+
+            scriptUrlInput.focus();
+
+          }, 100);
+
+        }
+
+
+        // BACKUP
+        else if (acaoPendente === 'backup') {
+
+          exportCSV();
+
+          osInput.focus();
+
+        }
+
+      }
+
+
+      // CREDENCIAL INCORRETA
+      else {
+
+        _tentativas++;
+
+
+        if (_tentativas >= 5) {
+
+          _bloqueadoAte =
+            Date.now() + 30000;
+
+          _tentativas = 0;
+
+          alert(
+            'Muitas tentativas incorretas. ' +
+            'Acesso bloqueado por 30 segundos.'
+          );
+
+        }
+
+        else {
+
+          alert(
+            'Credencial incorreta.'
+          );
+
+        }
+
+
+        passInput.value = '';
+
+        passInput.focus();
+
+      }
+
+    }
+
+
+    // ============================================================
+    // CONFIGURAÇÃO
+    // ============================================================
+
+    function fecharConfig() {
+
+      configModal.classList.add('hidden');
+
+      scriptUrlInput.value = '';
+
+      osInput.focus();
+
+    }
+
+
+    function salvarConfig() {
+
+      const url =
+        scriptUrlInput.value.trim();
+
+
+      localStorage.setItem(
+        'google_script_url',
+        url
+      );
+
+
+      alert(
+        'Link salvo com sucesso! ' +
+        'O sistema enviará os dados para essa planilha.'
+      );
+
+
+      fecharConfig();
+
+    }
+
+
+    // ============================================================
+    // EXPORTAÇÃO CSV
+    // ============================================================
+
+    function exportCSV() {
+
+      let historico =
+        JSON.parse(
+          localStorage.getItem('lab_data') || '[]'
+        );
+
+
+      if (historico.length === 0) {
+
+        alert(
+          'Nenhum dado registrado ainda.'
+        );
+
+        return;
+
+      }
+
+
+      let csvContent =
+        'data:text/csv;charset=utf-8,' +
+        'OS,Data_Hora_Termino_Coleta,Avaliacao_Satisfacao\n';
+
+
+      historico.forEach(function (row) {
+
+        csvContent +=
+          '"' + row.os + '",' +
+          '"' + row.dataHoraColeta + '",' +
+          '"' + row.satisfacao + '"\n';
+
+      });
+
+
+      const encodedUri =
+        encodeURI(csvContent);
+
+
+      const link =
+        document.createElement('a');
+
+
+      link.setAttribute(
+        'href',
+        encodedUri
+      );
+
+
+      link.setAttribute(
+        'download',
+        'relatorio_laboratorio.csv'
+      );
+
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+    }
+
+  </script>
+
+</body>
+</html>
