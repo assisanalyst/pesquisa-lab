@@ -135,8 +135,51 @@
       color: #334155;
     }
 
-    .btn-skip:active {
-      transform: scale(0.98);
+    /* ESTILOS DA TELA DE MOTIVO */
+    .reasons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .reason-btn {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 15px 10px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .reason-btn:hover, .reason-btn.selected {
+      border-color: #2563eb;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .custom-reason-container {
+      margin-top: 15px;
+    }
+
+    .custom-reason-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .custom-reason-input:focus {
+      border-color: #2563eb;
     }
 
     .hidden {
@@ -266,29 +309,27 @@
 
       <h1>Como foi seu atendimento hoje?</h1>
 
-      <p>
-        Toque na carinha que melhor representa sua opinião:
-      </p>
+      <p>Toque na carinha que melhor representa sua opinião:</p>
 
       <div class="emoji-container">
 
         <button
           class="emoji-btn btn-green"
-          onclick="rate('Satisfeito')">
+          onclick="tratarVoto('Satisfeito')">
           😊
           <span class="btn-label">BOM</span>
         </button>
 
         <button
           class="emoji-btn btn-yellow"
-          onclick="rate('Regular')">
+          onclick="tratarVoto('Regular')">
           😐
           <span class="btn-label">REGULAR</span>
         </button>
 
         <button
           class="emoji-btn btn-red"
-          onclick="rate('Ruim')">
+          onclick="tratarVoto('Ruim')">
           🙁
           <span class="btn-label">RUIM</span>
         </button>
@@ -297,10 +338,39 @@
 
       <button
         class="btn-skip"
-        onclick="rate('Não Avaliado')">
+        onclick="tratarVoto('Não Avaliado')">
         ⏭️ Prefiro não avaliar
       </button>
 
+    </div>
+
+    <!-- TELA 2.5: MOTIVO DA INSATISFAÇÃO (OPCIONAL) -->
+    <div id="stepReason" class="hidden">
+      <h1>O que podemos melhorar?</h1>
+      <p>Toque em uma opção (opcional):</p>
+
+      <div class="reasons-grid">
+        <button class="reason-btn" onclick="salvarMotivo('Demora na espera')">⏳ Demora</button>
+        <button class="reason-btn" onclick="salvarMotivo('Atendimento recepção')">🗣️ Atendimento</button>
+        <button class="reason-btn" onclick="salvarMotivo('Coleta ou exame')">💉 Coleta/Exame</button>
+        <button class="reason-btn" onclick="salvarMotivo('Limpeza e ambiente')">🧼 Limpeza</button>
+      </div>
+
+      <div class="custom-reason-container">
+        <input 
+          type="text" 
+          id="customReasonInput" 
+          class="custom-reason-input" 
+          placeholder="Outro motivo? Digite aqui (opcional)"
+          autocomplete="off">
+      </div>
+
+      <button 
+        class="btn-primary" 
+        style="width: 100%; margin-top: 15px; padding: 14px; font-size: 16px;" 
+        onclick="confirmarMotivoPersonalizado()">
+        Concluir
+      </button>
     </div>
 
     <!-- TELA 3: AGRADECIMENTO -->
@@ -436,464 +506,207 @@
 
     let currentOS = '';
     let scanTime = '';
+    let currentRating = '';
     let acaoPendente = '';
 
-    const osInput =
-      document.getElementById('osInput');
-
-    const stepScan =
-      document.getElementById('stepScan');
-
-    const stepRating =
-      document.getElementById('stepRating');
-
-    const stepThanks =
-      document.getElementById('stepThanks');
-
-    const authModal =
-      document.getElementById('authModal');
-
-    const configModal =
-      document.getElementById('configModal');
-
-    const passInput =
-      document.getElementById('passInput');
-
-    const scriptUrlInput =
-      document.getElementById('scriptUrlInput');
+    const osInput = document.getElementById('osInput');
+    const stepScan = document.getElementById('stepScan');
+    const stepRating = document.getElementById('stepRating');
+    const stepReason = document.getElementById('stepReason');
+    const stepThanks = document.getElementById('stepThanks');
+    const authModal = document.getElementById('authModal');
+    const configModal = document.getElementById('configModal');
+    const passInput = document.getElementById('passInput');
+    const scriptUrlInput = document.getElementById('scriptUrlInput');
+    const customReasonInput = document.getElementById('customReasonInput');
 
 
     async function gerarHash(texto) {
-
-      const dados =
-        new TextEncoder().encode(texto);
-
-      const buffer =
-        await crypto.subtle.digest(
-          'SHA-256',
-          dados
-        );
-
-      return Array
-        .from(new Uint8Array(buffer))
-        .map(byte =>
-          byte.toString(16).padStart(2, '0')
-        )
+      const dados = new TextEncoder().encode(texto);
+      const buffer = await crypto.subtle.digest('SHA-256', dados);
+      return Array.from(new Uint8Array(buffer))
+        .map(byte => byte.toString(16).padStart(2, '0'))
         .join('');
     }
 
-
-    // ============================================================
     // FOCO AUTOMÁTICO DO LEITOR
-    // ============================================================
-
     document.addEventListener('click', function () {
-
-      const authAberto =
-        !authModal.classList.contains('hidden');
-
-      const configAberto =
-        !configModal.classList.contains('hidden');
-
-      if (!authAberto && !configAberto) {
+      const authAberto = !authModal.classList.contains('hidden');
+      const configAberto = !configModal.classList.contains('hidden');
+      if (!authAberto && !configAberto && stepReason.classList.contains('hidden')) {
         osInput.focus();
       }
-
     });
 
-
-    // ============================================================
     // LEITURA DO CÓDIGO DE BARRAS
-    // ============================================================
-
-    osInput.addEventListener(
-      'keypress',
-      function (e) {
-
-        if (e.key === 'Enter') {
-
-          currentOS =
-            osInput.value.trim();
-
-          if (currentOS !== '') {
-
-            scanTime =
-              new Date().toLocaleString('pt-BR');
-
-            osInput.value = '';
-
-            mostrarEtapa(stepRating);
-          }
-
+    osInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        currentOS = osInput.value.trim();
+        if (currentOS !== '') {
+          scanTime = new Date().toLocaleString('pt-BR');
+          osInput.value = '';
+          mostrarEtapa(stepRating);
         }
-
       }
-    );
+    });
 
+    // FLUXO DE VOTAÇÃO
+    function tratarVoto(satisfacao) {
+      currentRating = satisfacao;
+      customReasonInput.value = '';
 
-    // ============================================================
-    // VOTAÇÃO
-    // ============================================================
+      // Se for Regular ou Ruim, pede o motivo opcional
+      if (satisfacao === 'Regular' || satisfacao === 'Ruim') {
+        mostrarEtapa(stepReason);
+      } else {
+        // Se for Satisfeito ou Não Avaliado, finaliza direto
+        rate(satisfacao, '');
+      }
+    }
 
-    function rate(satisfacao) {
+    function salvarMotivo(motivo) {
+      rate(currentRating, motivo);
+    }
 
+    function confirmarMotivoPersonalizado() {
+      const motivoDigitado = customReasonInput.value.trim();
+      rate(currentRating, motivoDigitado);
+    }
+
+    function rate(satisfacao, motivo) {
       const registro = {
-
         os: currentOS,
-
         dataHoraColeta: scanTime,
-
-        satisfacao: satisfacao
-
+        satisfacao: satisfacao,
+        motivo: motivo || ''
       };
 
-
-      let historico =
-        JSON.parse(
-          localStorage.getItem('lab_data') || '[]'
-        );
-
-
+      let historico = JSON.parse(localStorage.getItem('lab_data') || '[]');
       historico.push(registro);
+      localStorage.setItem('lab_data', JSON.stringify(historico));
 
-
-      localStorage.setItem(
-        'lab_data',
-        JSON.stringify(historico)
-      );
-
-
-      const scriptUrl =
-        localStorage.getItem('google_script_url');
-
-
+      const scriptUrl = localStorage.getItem('google_script_url');
       if (scriptUrl) {
-
         fetch(scriptUrl, {
-
           method: 'POST',
-
           mode: 'no-cors',
-
-          headers: {
-            'Content-Type': 'application/json'
-          },
-
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(registro)
-
         }).catch(function (err) {
-
-          console.error(
-            'Erro ao enviar:',
-            err
-          );
-
+          console.error('Erro ao enviar:', err);
         });
-
       }
-
 
       mostrarEtapa(stepThanks);
 
-
       setTimeout(function () {
-
         mostrarEtapa(stepScan);
-
         osInput.focus();
-
       }, 1800);
-
     }
 
-
-    // ============================================================
     // TROCA DE TELAS
-    // ============================================================
-
     function mostrarEtapa(etapa) {
-
       stepScan.classList.add('hidden');
-
       stepRating.classList.add('hidden');
-
+      stepReason.classList.add('hidden');
       stepThanks.classList.add('hidden');
-
       etapa.classList.remove('hidden');
-
     }
 
-
-    // ============================================================
-    // ABRIR ADMIN
-    // ============================================================
-
+    // ADMIN
     function abrirAdmin(acao) {
-
       acaoPendente = acao;
-
       passInput.value = '';
-
       authModal.classList.remove('hidden');
-
-      setTimeout(function () {
-
-        passInput.focus();
-
-      }, 100);
-
+      setTimeout(function () { passInput.focus(); }, 100);
     }
-
-
-    // ============================================================
-    // FECHAR ADMIN
-    // ============================================================
 
     function fecharAdmin() {
-
       authModal.classList.add('hidden');
-
       acaoPendente = '';
-
       passInput.value = '';
-
       osInput.focus();
-
     }
-
-
-    // ============================================================
-    // ENTER NA CREDENCIAL
-    // ============================================================
 
     function checarTeclaSenha(e) {
-
-      if (e.key === 'Enter') {
-
-        confirmarRamal();
-
-      }
-
+      if (e.key === 'Enter') { confirmarRamal(); }
     }
-
-
-    // ============================================================
-    // AUTENTICAÇÃO
-    // ============================================================
 
     async function confirmarRamal() {
-
-      const agora =
-        Date.now();
-
-
-      // Bloqueio temporário
+      const agora = Date.now();
       if (agora < _bloqueadoAte) {
-
-        const segundos =
-          Math.ceil(
-            (_bloqueadoAte - agora) / 1000
-          );
-
-        alert(
-          'Acesso temporariamente bloqueado. ' +
-          'Tente novamente em ' +
-          segundos +
-          ' segundos.'
-        );
-
+        const segundos = Math.ceil((_bloqueadoAte - agora) / 1000);
+        alert('Acesso temporariamente bloqueado. Tente novamente em ' + segundos + ' segundos.');
         return;
-
       }
 
+      const valorDigitado = passInput.value;
+      const hashDigitado = await gerarHash(valorDigitado);
 
-      const valorDigitado =
-        passInput.value;
-
-
-      const hashDigitado =
-        await gerarHash(valorDigitado);
-
-
-      // Comparação do HASH
       if (hashDigitado === _credencialHash) {
-
         _tentativas = 0;
-
         authModal.classList.add('hidden');
 
-
-        // CONFIGURAÇÃO
         if (acaoPendente === 'config') {
-
-          scriptUrlInput.value =
-            localStorage.getItem(
-              'google_script_url'
-            ) || '';
-
+          scriptUrlInput.value = localStorage.getItem('google_script_url') || '';
           configModal.classList.remove('hidden');
-
-          setTimeout(function () {
-
-            scriptUrlInput.focus();
-
-          }, 100);
-
-        }
-
-
-        // BACKUP
-        else if (acaoPendente === 'backup') {
-
+          setTimeout(function () { scriptUrlInput.focus(); }, 100);
+        } else if (acaoPendente === 'backup') {
           exportCSV();
-
           osInput.focus();
-
         }
-
-      }
-
-
-      // CREDENCIAL INCORRETA
-      else {
-
+      } else {
         _tentativas++;
-
-
         if (_tentativas >= 5) {
-
-          _bloqueadoAte =
-            Date.now() + 30000;
-
+          _bloqueadoAte = Date.now() + 30000;
           _tentativas = 0;
-
-          alert(
-            'Muitas tentativas incorretas. ' +
-            'Acesso bloqueado por 30 segundos.'
-          );
-
+          alert('Muitas tentativas incorretas. Acesso bloqueado por 30 segundos.');
+        } else {
+          alert('Credencial incorreta.');
         }
-
-        else {
-
-          alert(
-            'Credencial incorreta.'
-          );
-
-        }
-
-
         passInput.value = '';
-
         passInput.focus();
-
       }
-
     }
-
-
-    // ============================================================
-    // CONFIGURAÇÃO
-    // ============================================================
 
     function fecharConfig() {
-
       configModal.classList.add('hidden');
-
       scriptUrlInput.value = '';
-
       osInput.focus();
-
     }
-
 
     function salvarConfig() {
-
-      const url =
-        scriptUrlInput.value.trim();
-
-
-      localStorage.setItem(
-        'google_script_url',
-        url
-      );
-
-
-      alert(
-        'Link salvo com sucesso! ' +
-        'O sistema enviará os dados para essa planilha.'
-      );
-
-
+      const url = scriptUrlInput.value.trim();
+      localStorage.setItem('google_script_url', url);
+      alert('Link salvo com sucesso!');
       fecharConfig();
-
     }
 
-
-    // ============================================================
-    // EXPORTAÇÃO CSV
-    // ============================================================
-
+    // EXPORTAÇÃO CSV COM A NOVA COLUNA DE MOTIVO
     function exportCSV() {
-
-      let historico =
-        JSON.parse(
-          localStorage.getItem('lab_data') || '[]'
-        );
-
-
+      let historico = JSON.parse(localStorage.getItem('lab_data') || '[]');
       if (historico.length === 0) {
-
-        alert(
-          'Nenhum dado registrado ainda.'
-        );
-
+        alert('Nenhum dado registrado ainda.');
         return;
-
       }
 
-
-      let csvContent =
-        'data:text/csv;charset=utf-8,' +
-        'OS,Data_Hora_Termino_Coleta,Avaliacao_Satisfacao\n';
-
+      let csvContent = 'data:text/csv;charset=utf-8,OS,Data_Hora_Termino_Coleta,Avaliacao_Satisfacao,Motivo\n';
 
       historico.forEach(function (row) {
-
-        csvContent +=
-          '"' + row.os + '",' +
+        csvContent += '"' + row.os + '",' +
           '"' + row.dataHoraColeta + '",' +
-          '"' + row.satisfacao + '"\n';
-
+          '"' + row.satisfacao + '",' +
+          '"' + (row.motivo || '') + '"\n';
       });
 
-
-      const encodedUri =
-        encodeURI(csvContent);
-
-
-      const link =
-        document.createElement('a');
-
-
-      link.setAttribute(
-        'href',
-        encodedUri
-      );
-
-
-      link.setAttribute(
-        'download',
-        'relatorio_laboratorio.csv'
-      );
-
-
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', 'relatorio_laboratorio.csv');
       document.body.appendChild(link);
-
       link.click();
-
       document.body.removeChild(link);
-
     }
 
   </script>
